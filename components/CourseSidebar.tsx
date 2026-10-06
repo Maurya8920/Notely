@@ -144,6 +144,8 @@ export default function CourseSidebar({ courses, projects: initialProjects, user
     const pathname = usePathname();
     const router = useRouter();
     const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
 
     // ── helpers ──────────────────────────────────────────────────────────
 
@@ -359,9 +361,9 @@ export default function CourseSidebar({ courses, projects: initialProjects, user
                         type="button"
                         onClick={toggleTheme}
                         className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
-                        title={`Theme: ${theme}`}
+                        title={mounted ? `Theme: ${theme}` : "Toggle theme"}
                     >
-                        <Palette className="h-4 w-4" />
+                        {mounted ? <Palette className="h-4 w-4" /> : <span className="h-4 w-4" />}
                     </button>
                     {dbUser && <div className="scale-90"><Profile dbUser={dbUser} /></div>}
                 </div>

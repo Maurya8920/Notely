@@ -30,12 +30,15 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files
+.env
+.env*.local
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+!.env.example
+!**/.env.example
 
 # editors / tooling
 .vscode/
@@ -53,6 +56,7 @@ __pycache__/
 .ruff_cache/
 .venv/
 venv/
+RAG/.venv/
 .env.python
 
 # local runtime/data

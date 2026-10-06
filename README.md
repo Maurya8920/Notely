@@ -125,48 +125,52 @@ notely/
 git clone <repo-url>
 cd notely
 
-# Frontend
+# Frontend dependencies
 npm install
 
-# RAG pipeline
-cd rag_pipeline
-uv sync
+# RAG pipeline dependencies (requires Python 3.12+ and uv)
+cd RAG
+uv pip install -r requirements.txt
 cd ..
 ```
 
 ### 2. Environment variables
 
-**`.env.local`** (Next.js root):
+**Root `.env.local`** (copy from `.env.example`):
 ```bash
-MONGODB_URI=your_mongodb_connection_string
-AUTH0_SECRET=
-AUTH0_BASE_URL=http://localhost:3000
-AUTH0_ISSUER_BASE_URL=
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/notely?appName=Cluster0
+AUTH0_SECRET=<run: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
+AUTH0_DOMAIN=<your-tenant>.us.auth0.com
 AUTH0_CLIENT_ID=
 AUTH0_CLIENT_SECRET=
-FASTAPI_URL=http://localhost:8000
-UPSTASH_REDIS_URL=
+FASTAPI_URL=http://127.0.0.1:8000
+UPSTASH_REDIS_URL=rediss://default:<password>@<host>.upstash.io:6379
+APP_BASE_URL=http://localhost:3000
 ```
 
-**`rag_pipeline/.env`**:
+**`RAG/.env`** (copy from `RAG/.env.example`):
 ```bash
-QDRANT_ENDPOINT=
-QDRANT_API_KEY=
 GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.5-flash-lite
+QDRANT_ENDPOINT=https://<id>.<region>.gcp.cloud.qdrant.io
+QDRANT_API_KEY=
 ```
 
-### 3. Run the services
+### 3. Auth0 application settings
+
+In Auth0 → Applications → Settings, set:
+- **Allowed Callback URLs:** `http://localhost:3000/auth/callback`
+- **Allowed Logout URLs:** `http://localhost:3000`
+
+### 4. Run the services
 
 ```bash
-# Terminal 1 — Next.js frontend
+# Terminal 1 — Next.js frontend (http://localhost:3000)
 npm run dev
 
-# Terminal 2 — FastAPI RAG service
-cd rag_pipeline
-uv run uvicorn main:app --reload --port 8000
-
-# Terminal 3 — BullMQ worker (background processing)
-node worker.js
+# Terminal 2 — FastAPI RAG service (http://127.0.0.1:8000)
+cd RAG
+.venv\Scripts\uvicorn main:app --reload --reload-exclude ".venv" --port 8000
 ```
 
 Visit `http://localhost:3000/dashboard`.

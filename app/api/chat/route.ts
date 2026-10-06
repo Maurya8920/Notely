@@ -4,7 +4,7 @@ import clientPromise from "@/lib/mongodb";
 import { auth0 } from "@/lib/auth0";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 type Mode = "chat" | "ask" | "flashcards";
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         return error("A message or file is required.");
     }
 
-    const fastApiUrl = (process.env.FASTAPI_URL ?? "http://localhost:8000").replace(/\/+$/, "");
+    const fastApiUrl = (process.env.FASTAPI_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "").replace("localhost", "127.0.0.1");
 
     // Authentication
     const session = await auth0.getSession();
@@ -107,10 +107,13 @@ export async function POST(request: NextRequest) {
             const uploadRes = await fetch(`${fastApiUrl}/upload`, {
                 method: "POST",
                 body: forwardForm,
+                signal: AbortSignal.timeout(300_000),
             });
 
             if (!uploadRes.ok) {
-                throw new Error(`Upload of "${file.name}" failed: ${await uploadRes.text()}`);
+                const text = await uploadRes.text();
+                console.error(`[upload] FastAPI /upload failed (${uploadRes.status}):`, text);
+                throw new Error(`Upload of "${file.name}" failed: ${text}`);
             }
             return uploadRes.json();
         });
@@ -192,16 +195,19 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
+            signal: AbortSignal.timeout(300_000),
         });
 
         if (!res.ok) {
             const text = await res.text();
+            console.error(`[chat] FastAPI ${endpoint} failed (${res.status}):`, text);
             return error(`FastAPI ${endpoint} failed (${res.status}): ${text}`, 502);
         }
 
         generation = (await res.json()) as Record<string, unknown>;
     } catch (e: any) {
-        return error("Could not reach the AI service. Please try again.", 502);
+        console.error(`[chat] Could not reach FastAPI at ${fastApiUrl}${endpoint}:`, e?.message ?? e);
+        return error(`Could not reach the AI service: ${e?.message ?? "Connection refused or timed out"}. Is the FastAPI backend running?`, 502);
     }
 
     // ── Build assistant message ────────────────────────────────────────────

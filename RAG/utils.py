@@ -1,6 +1,9 @@
 import os
-
 from dotenv import load_dotenv
+
+# Must run before any import that reads env vars (e.g. langchain_google_genai)
+load_dotenv()
+
 from typing import Any
 
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -14,11 +17,11 @@ from embedding.embedder import query_documents
 # Setup
 # ============================================================
 
-load_dotenv()
+gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-3.1-flash-lite",
-    api_key=os.getenv("GEMINI_API_KEY"),
+    model=gemini_model,
+    api_key=os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"),
 )
 
 

@@ -6,14 +6,18 @@ from qdrant_client.models import Distance, VectorParams
 load_dotenv()
 
 COLLECTION_NAME = "documents"
+_client: QdrantClient | None = None
 
 
 def get_qdrant_client() -> QdrantClient:
-    return QdrantClient(
-        url=os.getenv("QDRANT_ENDPOINT"),
-        api_key=os.getenv("QDRANT_API_KEY"),
-        cloud_inference=True,
-    )
+    global _client
+    if _client is None:
+        _client = QdrantClient(
+            url=os.getenv("QDRANT_ENDPOINT"),
+            api_key=os.getenv("QDRANT_API_KEY"),
+            cloud_inference=True,
+        )
+    return _client
 
 
 def ensure_collection(client: QdrantClient):

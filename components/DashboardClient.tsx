@@ -52,6 +52,7 @@ export default function DashboardClient({ userId, projectId }: DashboardPageProp
                 // Dispatch background chat generation
                 axios.post("/api/chat", formData, {
                     headers: { "Content-Type": "multipart/form-data" },
+                    timeout: 310_000,
                 }).catch((err) => console.error("Background initial upload/chat error:", err));
             } else if (message) {
                 // Signal ChatHistory to trigger AI generation on landing

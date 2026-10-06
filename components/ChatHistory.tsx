@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { ChevronLeft, ChevronRight, Copy, Check, Layers, RotateCw, Loader2, Sparkles, MessageSquare, HelpCircle, FileText, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Check, Layers, RotateCw, Loader2, Sparkles, MessageSquare, HelpCircle, FileText, Upload, RefreshCw, AlertCircle } from "lucide-react";
 import Composer, { ComposerSubmitPayload } from "./Composer";
 import MarkdownContent from "./MarkdownContent";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -187,6 +187,7 @@ export default function ChatHistory({ initialMessages, courseId, userId }: ChatH
     const [loadingPhase, setLoadingPhase] = useState<LoadingPhase>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
     const initialTriggered = useRef(false);
+    const lastPayloadRef = useRef<ComposerSubmitPayload | null>(null);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -223,13 +224,18 @@ export default function ChatHistory({ initialMessages, courseId, userId }: ChatH
             formData.append("course_id", courseId);
             formData.append("user_id", userId);
 
-            axios.post("/api/chat", formData, { headers: { "Content-Type": "multipart/form-data" } })
+            axios.post("/api/chat", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+                timeout: 310_000,
+            })
                 .then(({ data }) => {
                     if (data.message) {
                         setMessages((prev) => [...prev, data.message]);
                     }
+                    lastPayloadRef.current = null;
                 })
                 .catch((err) => {
+                    lastPayloadRef.current = { message: pendingPrompt, mode: pendingMode, files: [] };
                     setError(axios.isAxiosError(err) ? err.response?.data?.error ?? "Unable to generate response." : "Unable to generate response.");
                 })
                 .finally(() => setLoadingPhase(null));
@@ -264,6 +270,7 @@ export default function ChatHistory({ initialMessages, courseId, userId }: ChatH
         try {
             const { data } = await axios.post("/api/chat", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
+                timeout: 310_000,
             });
 
             // After upload completes switch to thinking phase if there's a message
@@ -274,8 +281,10 @@ export default function ChatHistory({ initialMessages, courseId, userId }: ChatH
             if (data.message) {
                 setMessages((prev) => [...prev, data.message]);
             }
+            lastPayloadRef.current = null;
         } catch (err) {
-            setError(axios.isAxiosError(err) ? err.response?.data?.error ?? "Unable to send your message." : "Unable to send your message.");
+            lastPayloadRef.current = { message, mode, files };
+            setError(axios.isAxiosError(err) ? err.response?.data?.error ?? "Unable to send your message. Is the AI backend running?" : "Unable to send your message.");
         } finally {
             setLoadingPhase(null);
         }
@@ -362,9 +371,22 @@ export default function ChatHistory({ initialMessages, courseId, userId }: ChatH
             <div className="border-t border-border bg-background/90 px-4 pb-3 pt-3 backdrop-blur-sm sm:px-8">
                 <div className="mx-auto max-w-3xl space-y-2">
                     {error && (
-                        <p className="rounded-lg border border-destructive/20 bg-destructive/10 px-3.5 py-2 text-xs font-medium text-destructive">
-                            {error}
-                        </p>
+                        <div className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3.5 py-2.5">
+                            <AlertCircle className="h-4 w-4 shrink-0 text-destructive mt-0.5" />
+                            <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+                                <p className="text-xs font-medium text-destructive flex-1">{error}</p>
+                                {lastPayloadRef.current && (
+                                    <button
+                                        type="button"
+                                        onClick={() => { if (lastPayloadRef.current) handleSend(lastPayloadRef.current); }}
+                                        className="inline-flex items-center gap-1 rounded-md bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive hover:bg-destructive/25 transition-colors shrink-0"
+                                    >
+                                        <RefreshCw className="h-3 w-3" />
+                                        Retry
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     )}
                     <Composer onSend={handleSend} disabled={isSending} />
                     <p className="text-center text-[11px] text-muted-foreground">

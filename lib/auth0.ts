@@ -26,7 +26,7 @@ export const auth0 = new Auth0Client({
 
                 if (user) {
                     return NextResponse.redirect(
-                        new URL(context.returnTo || "/dashboard", process.env.APP_BASE_URL)
+                        new URL(context.returnTo || "/dashboard", process.env.APP_BASE_URL || "http://localhost:3000")
                     );
                 }
 
@@ -51,7 +51,7 @@ export const auth0 = new Auth0Client({
         }
 
         return NextResponse.redirect(
-            new URL(context.returnTo || "/dashboard", process.env.APP_BASE_URL)
+            new URL(context.returnTo || "/dashboard", process.env.APP_BASE_URL || "http://localhost:3000")
         );
     },
 });
