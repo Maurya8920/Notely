@@ -23,12 +23,14 @@ export interface ComposerSubmitPayload {
 interface ComposerProps {
     onSend: (payload: ComposerSubmitPayload) => Promise<void> | void;
     disabled?: boolean;
+    initialMode?: Mode;
 }
 
-export default function Composer({ onSend, disabled }: ComposerProps) {
+export default function Composer({ onSend, disabled, initialMode = "chat" }: ComposerProps) {
     const [value, setValue] = useState("");
     const [files, setFiles] = useState<File[]>([]);
-    const [mode, setMode] = useState<Mode>("chat");
+    const [mode, setMode] = useState<Mode>(initialMode);
+    const [showHint, setShowHint] = useState(false);
     const [sending, setSending] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -46,14 +48,20 @@ export default function Composer({ onSend, disabled }: ComposerProps) {
         if (sending || disabled) return;
 
         setSending(true);
+        const hadFiles = files.length > 0;
         const payload: ComposerSubmitPayload = { message: value, mode, files };
 
         setValue("");
         setFiles([]);
+        setShowHint(false);
         if (textareaRef.current) textareaRef.current.style.height = "auto";
 
         try {
             await onSend(payload);
+            if (hadFiles) {
+                setMode("ask");
+                setShowHint(true);
+            }
         } finally {
             setSending(false);
         }
@@ -111,6 +119,24 @@ export default function Composer({ onSend, disabled }: ComposerProps) {
                     </div>
                 )}
 
+                {/* Upload Success Hint */}
+                {showHint && (
+                    <div className="flex items-center justify-between gap-2 px-3 py-1.5 mb-2 rounded-xl bg-primary/10 border border-primary/20 text-xs text-primary font-medium animate-in fade-in duration-200">
+                        <div className="flex items-center gap-1.5">
+                            <HelpCircle className="h-3.5 w-3.5 shrink-0" />
+                            <span>Ask about your file in Ask notes mode.</span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowHint(false)}
+                            title="Dismiss hint"
+                            className="flex items-center justify-center h-4 w-4 rounded text-primary/70 hover:text-primary transition-colors cursor-pointer"
+                        >
+                            <X className="h-3.5 w-3.5" />
+                        </button>
+                    </div>
+                )}
+
                 {/* Textarea Input — stays enabled while sending, so the user can keep typing */}
                 <Textarea
                     ref={textareaRef}
@@ -141,7 +167,10 @@ export default function Composer({ onSend, disabled }: ComposerProps) {
                         <div className="flex items-center gap-1 rounded-lg bg-transparent p-0.5">
                             <button
                                 type="button"
-                                onClick={() => setMode("chat")}
+                                onClick={() => {
+                                    setMode("chat");
+                                    setShowHint(false);
+                                }}
                                 className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${mode === "chat"
                                     ? "bg-muted text-foreground font-semibold"
                                     : "text-muted-foreground hover:text-foreground"
@@ -153,7 +182,10 @@ export default function Composer({ onSend, disabled }: ComposerProps) {
 
                             <button
                                 type="button"
-                                onClick={() => setMode("ask")}
+                                onClick={() => {
+                                    setMode("ask");
+                                    setShowHint(false);
+                                }}
                                 className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${mode === "ask"
                                     ? "bg-muted text-foreground font-semibold"
                                     : "text-muted-foreground hover:text-foreground"
@@ -165,7 +197,10 @@ export default function Composer({ onSend, disabled }: ComposerProps) {
 
                             <button
                                 type="button"
-                                onClick={() => setMode("flashcards")}
+                                onClick={() => {
+                                    setMode("flashcards");
+                                    setShowHint(false);
+                                }}
                                 className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${mode === "flashcards"
                                     ? "bg-muted text-foreground font-semibold"
                                     : "text-muted-foreground hover:text-foreground"

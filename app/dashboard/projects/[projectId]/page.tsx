@@ -12,6 +12,8 @@ import { libertinus } from "@/lib/fonts";
 import Link from "next/link";
 import { FolderOpen, MessageSquare, Clock, ArrowUpRight, Plus, Sparkles } from "lucide-react";
 
+import DatabaseError from "@/components/DatabaseError";
+
 export const dynamic = "force-dynamic";
 
 type ProjectDoc = {
@@ -43,16 +45,31 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
     if (!projectId || typeof projectId !== "string") return notFound();
 
     const auth0ID = session.user.sub.split("|")[1];
-    const dbUser = auth0ID ? ((await getUser(auth0ID)) as DbUser) : null;
 
-    const client = await clientPromise;
-    const db = client.db();
+    let dbUser: DbUser | null = null;
+    let project: ProjectDoc | null = null;
+    let allProjects: ProjectDoc[] = [];
+    let allCourses: CourseDoc[] = [];
 
-    const [project, allProjects, allCourses] = await Promise.all([
-        db.collection("projects").findOne({ _id: projectId as any, userId: auth0ID }) as unknown as Promise<ProjectDoc | null>,
-        db.collection("projects").find({ userId: auth0ID }).sort({ updatedAt: -1 }).toArray() as unknown as Promise<ProjectDoc[]>,
-        db.collection("courses").find({ userId: auth0ID }).sort({ pinned: -1, "chat.updatedAt": -1 }).toArray() as unknown as Promise<CourseDoc[]>,
-    ]);
+    try {
+        dbUser = auth0ID ? ((await getUser(auth0ID)) as DbUser) : null;
+
+        const client = await clientPromise;
+        const db = client.db();
+
+        const [p, ap, ac] = await Promise.all([
+            db.collection("projects").findOne({ _id: projectId as any, userId: auth0ID }) as unknown as Promise<ProjectDoc | null>,
+            db.collection("projects").find({ userId: auth0ID }).sort({ updatedAt: -1 }).toArray() as unknown as Promise<ProjectDoc[]>,
+            db.collection("courses").find({ userId: auth0ID }).sort({ pinned: -1, "chat.updatedAt": -1 }).toArray() as unknown as Promise<CourseDoc[]>,
+        ]);
+
+        project = p;
+        allProjects = ap;
+        allCourses = ac;
+    } catch (err) {
+        console.error("Project page failed to connect to database:", err);
+        return <DatabaseError />;
+    }
 
     if (!project) return notFound();
 

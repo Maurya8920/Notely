@@ -285,6 +285,7 @@ export default function ChatHistory({ initialMessages, courseId, userId }: ChatH
         } catch (err) {
             lastPayloadRef.current = { message, mode, files };
             setError(axios.isAxiosError(err) ? err.response?.data?.error ?? "Unable to send your message. Is the AI backend running?" : "Unable to send your message.");
+            throw err;
         } finally {
             setLoadingPhase(null);
         }
@@ -388,7 +389,11 @@ export default function ChatHistory({ initialMessages, courseId, userId }: ChatH
                             </div>
                         </div>
                     )}
-                    <Composer onSend={handleSend} disabled={isSending} />
+                    <Composer
+                        onSend={handleSend}
+                        disabled={isSending}
+                        initialMode={messages.some((m) => Array.isArray(m.fileNames) && m.fileNames.length > 0) ? "ask" : "chat"}
+                    />
                     <p className="text-center text-[11px] text-muted-foreground">
                         Notely can make mistakes — verify important information.
                     </p>

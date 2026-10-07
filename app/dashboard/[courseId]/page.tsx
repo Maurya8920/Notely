@@ -8,6 +8,8 @@ import { getUser } from "@/lib/helper";
 import { DbUser } from "@/lib/Types";
 import { getCourseIdQuery } from "@/lib/server-utils";
 
+import DatabaseError from "@/components/DatabaseError";
+
 export const dynamic = "force-dynamic";
 
 type CourseDoc = {
@@ -39,35 +41,50 @@ export default async function CoursePage({ params }: { params: Promise<{ courseI
 
     const userEmail = session.user.email;
     const auth0ID = session.user.sub.split("|")[1];
-    const dbUser = auth0ID ? ((await getUser(auth0ID)) as DbUser) : null;
 
-    const client = await clientPromise;
-    const db = client.db();
+    let dbUser: DbUser | null = null;
+    let course: CourseDoc | null = null;
+    let courses: CourseDoc[] = [];
+    let projects: ProjectDoc[] = [];
 
-    // Query for courses owned by user OR shared with user as collaborator
-    const accessQuery = {
-        $or: [
-            { userId: auth0ID },
-            ...(userEmail ? [{ collaborators: userEmail }] : []),
-        ],
-    };
+    try {
+        dbUser = auth0ID ? ((await getUser(auth0ID)) as DbUser) : null;
 
-    const [course, courses, projects] = await Promise.all([
-        db.collection("courses").findOne({
-            ...getCourseIdQuery(courseId),
-            ...accessQuery,
-        } as any) as unknown as Promise<CourseDoc | null>,
+        const client = await clientPromise;
+        const db = client.db();
 
-        db.collection("courses")
-            .find(accessQuery)
-            .sort({ pinned: -1, "chat.updatedAt": -1, createdAt: -1 })
-            .toArray() as unknown as Promise<CourseDoc[]>,
+        // Query for courses owned by user OR shared with user as collaborator
+        const accessQuery = {
+            $or: [
+                { userId: auth0ID },
+                ...(userEmail ? [{ collaborators: userEmail }] : []),
+            ],
+        };
 
-        db.collection("projects")
-            .find({ userId: auth0ID })
-            .sort({ updatedAt: -1, createdAt: -1 })
-            .toArray() as unknown as Promise<ProjectDoc[]>,
-    ]);
+        const [c, clist, plist] = await Promise.all([
+            db.collection("courses").findOne({
+                ...getCourseIdQuery(courseId),
+                ...accessQuery,
+            } as any) as unknown as Promise<CourseDoc | null>,
+
+            db.collection("courses")
+                .find(accessQuery)
+                .sort({ pinned: -1, "chat.updatedAt": -1, createdAt: -1 })
+                .toArray() as unknown as Promise<CourseDoc[]>,
+
+            db.collection("projects")
+                .find({ userId: auth0ID })
+                .sort({ updatedAt: -1, createdAt: -1 })
+                .toArray() as unknown as Promise<ProjectDoc[]>,
+        ]);
+
+        course = c;
+        courses = clist;
+        projects = plist;
+    } catch (err) {
+        console.error("Course page failed to connect to database:", err);
+        return <DatabaseError />;
+    }
 
     if (!course) return notFound();
 

@@ -6,6 +6,8 @@ import { libertinus } from "@/lib/fonts";
 import { Globe, BookOpen } from "lucide-react";
 import type { ChatMessage, Flashcard } from "@/lib/Types";
 
+import DatabaseError from "@/components/DatabaseError";
+
 export const dynamic = "force-dynamic";
 
 type CourseDoc = {
@@ -21,9 +23,15 @@ export default async function PublicSharePage({ params }: { params: Promise<{ sh
     const { shareId } = await params;
     if (!shareId) return notFound();
 
-    const client = await clientPromise;
-    const db = client.db();
-    const course = await db.collection<CourseDoc>("courses").findOne({ publicShareId: shareId });
+    let course: CourseDoc | null = null;
+    try {
+        const client = await clientPromise;
+        const db = client.db();
+        course = await db.collection<CourseDoc>("courses").findOne({ publicShareId: shareId });
+    } catch (err) {
+        console.error("Public share page failed to connect to database:", err);
+        return <DatabaseError />;
+    }
 
     if (!course) return notFound();
 

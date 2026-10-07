@@ -1,8 +1,17 @@
 import os
+import re
+import logging
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Must run before any import that reads env vars (e.g. langchain_google_genai)
+load_dotenv(Path(__file__).parent / ".env")
 load_dotenv()
+
+if not os.getenv("GEMINI_API_KEY") and os.getenv("GOOGLE_API_KEY"):
+    os.environ["GEMINI_API_KEY"] = os.getenv("GOOGLE_API_KEY")
+if not os.getenv("GOOGLE_API_KEY") and os.getenv("GEMINI_API_KEY"):
+    os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY")
 
 from typing import Any
 
@@ -11,7 +20,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
-from embedding.embedder import query_documents
+from embedding.embedder import query_documents, fetch_ordered_document_chunks
+
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # Setup
@@ -121,6 +132,34 @@ flashcard_chain = (flashcard_prompt | llm | flashcard_parser).with_retry(
 
 
 # ============================================================
+# Broad query detection
+# ============================================================
+
+BROAD_PATTERNS = [
+    r"\bsolve\s+(all|whole|entire|everything|every|the\s+assignment|this\s+assignment|assignment|the\s+doc(ument)?|this\s+doc(ument)?|all\s+the\s+questions?)\b",
+    r"\bdo\s+(all|everything|the\s+whole\s+assignment)\b",
+    r"\banswer\s+(all|every|the\s+questions?)\b",
+    r"\bsummar(y|ize|ise)\b",
+    r"\bwhole\s+(document|doc|file|notes?|assignment|pdf|docx)\b",
+    r"\bentire\s+(document|doc|file|notes?|assignment|pdf|docx)\b",
+    r"\bfull\s+(document|doc|file|notes?|assignment|pdf|docx)\b",
+    r"\ball\s+(questions?|problems?|exercises?|tasks?)\b",
+    r"\bcomplete\s+(the\s+)?assignment\b",
+    r"\boverview\b",
+    r"\b(what('s| is)|tell me about)\s+(this|the)\s+(document|file|notes?|assignment|pdf|docx)\b",
+    r"\bexplain\s+(this|the)\s+(document|file|assignment)\b",
+]
+
+
+def is_broad_request(query: str) -> bool:
+    """Return True if the query is asking to solve or summarize all/whole document."""
+    q = query.strip().lower()
+    if q in {"solve", "summary", "summarize", "assignment", "solve all", "summarize all", "all questions"}:
+        return True
+    return any(re.search(pat, q, re.IGNORECASE) for pat in BROAD_PATTERNS)
+
+
+# ============================================================
 # Shared helper
 # ============================================================
 
@@ -129,23 +168,49 @@ def _retrieve_context(
     query_text: str,
     user_id: str,
     course_id: str,
+    document_name: str | None = None,
     limit: int = 10,
 ) -> tuple[str, int]:
     """
     Retrieve course documents and format them as RAG context.
+    For broad requests (e.g. 'solve all', 'summarize whole document'),
+    fetches all chunks of the latest uploaded document in order or retrieves up to limit=20 chunks.
 
     Returns:
         (context, number_of_sources)
     """
+    broad = is_broad_request(query_text)
+    points = []
 
-    results = query_documents(
-        query_text=query_text,
-        user_id=user_id,
-        course_id=course_id,
-        limit=limit,
-    )
+    if broad:
+        try:
+            ordered_records = fetch_ordered_document_chunks(
+                user_id=user_id,
+                course_id=course_id,
+                document_name=document_name,
+                limit=50,
+            )
+            if ordered_records:
+                points = ordered_records
+        except Exception as e:
+            logger.warning(f"Failed to fetch ordered document chunks: {e}")
 
-    points = getattr(results, "points", [])
+        if not points:
+            results = query_documents(
+                query_text=query_text,
+                user_id=user_id,
+                course_id=course_id,
+                limit=max(limit, 20),
+            )
+            points = getattr(results, "points", [])
+    else:
+        results = query_documents(
+            query_text=query_text,
+            user_id=user_id,
+            course_id=course_id,
+            limit=limit,
+        )
+        points = getattr(results, "points", [])
 
     if not points:
         return "", 0
@@ -167,8 +232,16 @@ def _retrieve_context(
             continue
 
         source_count += 1
+        doc_name = payload.get("document")
+        chunk_idx = payload.get("chunk_index")
+        header = f"[Source {source_count}"
+        if doc_name:
+            header += f" - {doc_name}"
+        if chunk_idx is not None:
+            header += f" (Part {chunk_idx + 1})"
+        header += "]"
 
-        context_parts.append(f"[Source {source_count}]\n{text}")
+        context_parts.append(f"{header}\n{text}")
 
     return "\n\n".join(context_parts), source_count
 
@@ -182,6 +255,7 @@ def generate_answer(
     query_text: str,
     user_id: str,
     course_id: str,
+    document_name: str | None = None,
 ) -> dict[str, Any]:
     """
     Answer a user's question using only retrieved course material.
@@ -206,6 +280,7 @@ def generate_answer(
         query_text=query_text,
         user_id=user_id,
         course_id=course_id,
+        document_name=document_name,
         limit=10,
     )
 
@@ -249,6 +324,7 @@ def generate_flashcards(
     user_id: str,
     course_id: str,
     num_cards: int = 5,
+    document_name: str | None = None,
 ) -> list[dict[str, Any]]:
     """
     Generate study flashcards from retrieved course material.
@@ -278,6 +354,7 @@ def generate_flashcards(
         query_text=query_text,
         user_id=user_id,
         course_id=course_id,
+        document_name=document_name,
         limit=10,
     )
 
