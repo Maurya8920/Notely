@@ -1,36 +1,46 @@
-import { MongoClient } from "mongodb";
+import { MongoClient, MongoClientOptions } from "mongodb";
 
 declare global {
     var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
 const uri = process.env.MONGODB_URI;
-const options = {};
+
+const options: MongoClientOptions = {
+    serverSelectionTimeoutMS: 10000,
+    connectTimeoutMS: 10000,
+    maxPoolSize: 10,
+};
 
 let clientPromise: Promise<MongoClient>;
 
 if (!uri) {
-    // In CI / build step, prevent build crash if env var is not set during static analysis
     if (process.env.NODE_ENV === "production") {
         clientPromise = new Promise<MongoClient>((_, reject) => {
-            reject(new Error("MONGODB_URI is not defined. Please set MONGODB_URI in your environment variables."));
+            reject(
+                new Error(
+                    "MONGODB_URI is not defined. Please set MONGODB_URI in your environment variables."
+                )
+            );
         });
     } else {
         throw new Error("Please add your Mongo URI to .env.local");
     }
 } else {
-    if (process.env.NODE_ENV === "development") {
-        // In dev, use a global variable so the connection is reused across hot reloads
-        if (!global._mongoClientPromise) {
-            const client = new MongoClient(uri, options);
-            global._mongoClientPromise = client.connect();
-        }
-        clientPromise = global._mongoClientPromise;
-    } else {
-        // In production, no need for a global var — module is only loaded once
+    // Use the global cached client in BOTH dev and production (avoids reconnect storms)
+    if (!global._mongoClientPromise) {
         const client = new MongoClient(uri, options);
-        clientPromise = client.connect();
+        global._mongoClientPromise = client.connect().catch((err) => {
+            console.error(
+                "Cannot connect to MongoDB — check Atlas Network Access IP allowlist and that the cluster is not paused.",
+                err
+            );
+            // Reset cached promise on failure so subsequent requests can retry
+            global._mongoClientPromise = undefined;
+            throw err;
+        });
     }
+    clientPromise = global._mongoClientPromise;
 }
 
 export default clientPromise;

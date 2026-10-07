@@ -9,6 +9,7 @@ import { getUser } from "@/lib/helper";
 import { DbUser } from "@/lib/Types";
 import clientPromise from "@/lib/mongodb";
 import CourseSidebar, { SidebarCourse, SidebarProject } from "@/components/CourseSidebar";
+import DatabaseError from "@/components/DatabaseError";
 import Link from "next/link";
 import { BookOpen, Clock, Users, ArrowUpRight, Sparkles, FolderOpen } from "lucide-react";
 
@@ -41,31 +42,42 @@ export default async function DashboardPage() {
     }
 
     const auth0ID = user?.sub.split("|")[1];
-    const dbUser = (await getUser(auth0ID as string)) as DbUser;
-    const userEmail = session.user.email;
+    const userEmail = user?.email;
+    let dbUser: DbUser | null = null;
+    let courses: CourseDoc[] = [];
+    let projects: ProjectDoc[] = [];
 
-    const client = await clientPromise;
-    const db = client.db();
+    try {
+        dbUser = (await getUser(auth0ID as string)) as DbUser;
 
-    const accessQuery = {
-        $or: [
-            { userId: auth0ID },
-            ...(userEmail ? [{ collaborators: userEmail }] : []),
-        ],
-    };
+        const client = await clientPromise;
+        const db = client.db();
 
-    // Query courses and projects concurrently
-    const [courses, projects] = await Promise.all([
-        db.collection("courses")
-            .find(accessQuery)
-            .sort({ pinned: -1, "chat.updatedAt": -1, createdAt: -1 })
-            .toArray() as unknown as Promise<CourseDoc[]>,
+        const accessQuery = {
+            $or: [
+                { userId: auth0ID },
+                ...(userEmail ? [{ collaborators: userEmail }] : []),
+            ],
+        };
 
-        db.collection("projects")
-            .find({ userId: auth0ID })
-            .sort({ updatedAt: -1, createdAt: -1 })
-            .toArray() as unknown as Promise<ProjectDoc[]>,
-    ]);
+        // Query courses and projects concurrently
+        const [c, p] = await Promise.all([
+            db.collection("courses")
+                .find(accessQuery)
+                .sort({ pinned: -1, "chat.updatedAt": -1, createdAt: -1 })
+                .toArray() as unknown as Promise<CourseDoc[]>,
+
+            db.collection("projects")
+                .find({ userId: auth0ID })
+                .sort({ updatedAt: -1, createdAt: -1 })
+                .toArray() as unknown as Promise<ProjectDoc[]>,
+        ]);
+        courses = c;
+        projects = p;
+    } catch (err) {
+        console.error("Dashboard failed to connect to database:", err);
+        return <DatabaseError />;
+    }
 
     const time = new Date().getHours();
     const greetingTime = time < 12 ? "morning" : time < 18 ? "afternoon" : "evening";

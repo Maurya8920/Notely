@@ -6,6 +6,8 @@ import { notFound } from "next/navigation";
 import { libertinus } from "@/lib/fonts";
 import { ThemeToggleDropdown } from "@/components/ThemeToggle";
 
+import DatabaseError from "@/components/DatabaseError";
+
 export const dynamic = "force-dynamic";
 
 type CourseListItem = {
@@ -20,11 +22,17 @@ export default async function CourseLibraryPage() {
     const session = await auth0.getSession();
     if (!session) return notFound();
 
-    const client = await clientPromise;
-    const courses = (await client.db().collection("courses")
-        .find({ userId: session.user.sub.split("|")[1] })
-        .sort({ "chat.updatedAt": -1, createdAt: -1 })
-        .toArray()) as unknown as CourseListItem[];
+    let courses: CourseListItem[] = [];
+    try {
+        const client = await clientPromise;
+        courses = (await client.db().collection("courses")
+            .find({ userId: session.user.sub.split("|")[1] })
+            .sort({ "chat.updatedAt": -1, createdAt: -1 })
+            .toArray()) as unknown as CourseListItem[];
+    } catch (err) {
+        console.error("Course library failed to connect to database:", err);
+        return <DatabaseError />;
+    }
 
     return (
         <main className="min-h-screen bg-background text-foreground">

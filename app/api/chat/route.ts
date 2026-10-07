@@ -178,25 +178,60 @@ export async function POST(request: NextRequest) {
         .filter((m) => m.content && typeof m.content === "string" && m.content.trim())
         .map((m) => ({ role: m.role as "user" | "assistant", content: m.content!.trim() }));
 
+    // ── Check if course has uploaded documents ────────────────────────────
+    const allCourseMessages = course.chat?.messages ?? [];
+    const uploadedFileNames: string[] = [];
+    for (const msg of allCourseMessages) {
+        if (Array.isArray(msg.fileNames)) {
+            uploadedFileNames.push(...msg.fileNames);
+        }
+    }
+    if (fileNames.length > 0) {
+        uploadedFileNames.push(...fileNames);
+    }
+    const hasUploadedDocs = uploadedFileNames.length > 0;
+    const latestFileName = uploadedFileNames.length > 0
+        ? uploadedFileNames[uploadedFileNames.length - 1]
+        : undefined;
+
     // ── Call FastAPI directly ─────────────────────────────────────────────
+    // If mode is "chat" and course has documents, automatically add retrieved context via /chat-with-context
     const endpoint =
-        mode === "chat" ? "/chat" : mode === "ask" ? "/ask" : "/generate-flashcards";
+        mode === "flashcards"
+            ? "/generate-flashcards"
+            : mode === "ask"
+                ? "/ask"
+                : hasUploadedDocs
+                    ? "/chat-with-context"
+                    : "/chat";
 
     const body =
         mode === "flashcards"
-            ? { query: message, user_id: userId, course_id: courseId, num_cards: 5 }
+            ? { query: message, user_id: userId, course_id: courseId, num_cards: 5, ...(latestFileName ? { document_name: latestFileName } : {}) }
             : mode === "ask"
-                ? { query: message, user_id: userId, course_id: courseId }
-                : { query: message, history };
+                ? { query: message, user_id: userId, course_id: courseId, ...(latestFileName ? { document_name: latestFileName } : {}) }
+                : hasUploadedDocs
+                    ? { query: message, user_id: userId, course_id: courseId, history, ...(latestFileName ? { document_name: latestFileName } : {}) }
+                    : { query: message, history };
 
     let generation: Record<string, unknown>;
     try {
-        const res = await fetch(`${fastApiUrl}${endpoint}`, {
+        let res = await fetch(`${fastApiUrl}${endpoint}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
             signal: AbortSignal.timeout(300_000),
         });
+
+        // Graceful fallback: If /chat-with-context returns 404, fall back to /ask
+        if (!res.ok && res.status === 404 && endpoint === "/chat-with-context") {
+            res = await fetch(`${fastApiUrl}/ask`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: message, user_id: userId, course_id: courseId, ...(latestFileName ? { document_name: latestFileName } : {}) }),
+                signal: AbortSignal.timeout(300_000),
+            });
+        }
 
         if (!res.ok) {
             const text = await res.text();
@@ -225,7 +260,7 @@ export async function POST(request: NextRequest) {
             generation.answer ?? generation.message ?? generation.response ?? generation.content ?? generation;
         assistantMessage.content =
             typeof rawContent === "string" ? rawContent : extractText(rawContent);
-        if (mode === "ask" && Array.isArray(generation.sources)) {
+        if (Array.isArray(generation.sources) && generation.sources.length > 0) {
             assistantMessage.sources = generation.sources;
         }
     }
