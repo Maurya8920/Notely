@@ -7,7 +7,7 @@ import AnimatedSection from "./AnimatedSection";
 
 function UploadIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg suppressHydrationWarning width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="17 8 12 3 7 8" />
       <line x1="12" y1="3" x2="12" y2="15" />
@@ -17,7 +17,7 @@ function UploadIcon() {
 
 function SparklesIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg suppressHydrationWarning width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
       <path d="M5 3v4" /><path d="M3 5h4" />
       <path d="M19 17v4" /><path d="M17 19h4" />
@@ -27,7 +27,7 @@ function SparklesIcon() {
 
 function ReviewIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg suppressHydrationWarning width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="5" width="20" height="14" rx="2" />
       <line x1="2" y1="10" x2="22" y2="10" />
     </svg>
@@ -36,7 +36,7 @@ function ReviewIcon() {
 
 function FileIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg suppressHydrationWarning width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
       <path d="M14 2v4a2 2 0 0 0 2 2h4" />
       <line x1="8" y1="13" x2="16" y2="13" />
@@ -47,7 +47,7 @@ function FileIcon() {
 
 function CardIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg suppressHydrationWarning width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="4" width="20" height="16" rx="2" />
       <path d="m9 8 3 3 3-3" />
       <line x1="12" y1="11" x2="12" y2="16" />
@@ -57,7 +57,7 @@ function CardIcon() {
 
 function ChatIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg suppressHydrationWarning width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
       <line x1="8" y1="10" x2="16" y2="10" />
       <line x1="8" y1="14" x2="12" y2="14" />
@@ -67,7 +67,7 @@ function ChatIcon() {
 
 function AnchorIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg suppressHydrationWarning width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="5" r="3" />
       <line x1="12" y1="8" x2="12" y2="21" />
       <path d="M5 15H2a10 10 0 0 0 20 0h-3" />
@@ -77,7 +77,7 @@ function AnchorIcon() {
 
 function ArrowRight() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg suppressHydrationWarning width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
     </svg>
   );
@@ -118,13 +118,13 @@ function HeroSection() {
           </p>
 
           <div className="lp-hero-ctas mt-9 flex flex-wrap items-center gap-3">
-            <Link
+            <a
               href="/auth/login"
               className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-7 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-80"
             >
               Get Started Free
               <ArrowRight />
-            </Link>
+            </a>
             <a
               href="#how-it-works"
               className="inline-flex h-11 items-center justify-center rounded-lg border border-border bg-background px-7 text-sm font-medium text-foreground transition-colors hover:bg-muted"
@@ -136,15 +136,15 @@ function HeroSection() {
           {/* Social proof micro-stat */}
           <div className="lp-hero-badge mt-8 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6 9 17l-5-5"/></svg>
+              <svg suppressHydrationWarning width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6 9 17l-5-5"/></svg>
               No credit card required
             </span>
             <span className="flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6 9 17l-5-5"/></svg>
+              <svg suppressHydrationWarning width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6 9 17l-5-5"/></svg>
               PDF, PPT, DOCX supported
             </span>
             <span className="flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6 9 17l-5-5"/></svg>
+              <svg suppressHydrationWarning width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6 9 17l-5-5"/></svg>
               Cited answers only
             </span>
           </div>
@@ -506,13 +506,13 @@ function CtaSection() {
               Upload your first document in under a minute. No credit card required.
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-              <Link
+              <a
                 href="/auth/login"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-9 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-80"
               >
                 Get Started Free
                 <ArrowRight />
-              </Link>
+              </a>
             </div>
 
             {/* Tiny reassurance row */}
@@ -539,8 +539,8 @@ function Footer() {
           </div>
 
           <nav className="flex flex-wrap gap-x-8 gap-y-2 text-sm text-muted-foreground">
-            <Link href="/auth/login" className="transition-colors hover:text-foreground">Sign up</Link>
-            <Link href="/auth/login" className="transition-colors hover:text-foreground">Log in</Link>
+            <a href="/auth/login" className="transition-colors hover:text-foreground">Sign up</a>
+            <a href="/auth/login" className="transition-colors hover:text-foreground">Log in</a>
             <a href="#how-it-works" className="transition-colors hover:text-foreground">How it works</a>
             <a href="#features" className="transition-colors hover:text-foreground">Features</a>
           </nav>

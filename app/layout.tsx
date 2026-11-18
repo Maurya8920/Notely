@@ -20,7 +20,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${libertinus.variable} h-full antialiased`}
     >
-      <body className={`${inter.className} min-h-full bg-background text-foreground`}>
+      <body
+        suppressHydrationWarning
+        className={`${inter.className} min-h-full bg-background text-foreground`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

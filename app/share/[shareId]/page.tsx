@@ -44,12 +44,12 @@ export default async function PublicSharePage({ params }: { params: Promise<{ sh
                     </div>
                 </div>
 
-                <Link
+                <a
                     href="/auth/login"
                     className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
                 >
                     Get Started
-                </Link>
+                </a>
             </header>
 
             {/* Course Title Bar */}
@@ -116,9 +116,9 @@ export default async function PublicSharePage({ params }: { params: Promise<{ sh
             {/* Footer Banner */}
             <footer className="border-t border-border bg-muted/40 p-4 text-center text-xs text-muted-foreground">
                 Want to process your own documents and generate flashcards?{" "}
-                <Link href="/auth/login" className="font-medium text-foreground underline underline-offset-4 hover:opacity-80">
+                <a href="/auth/login" className="font-medium text-foreground underline underline-offset-4 hover:opacity-80">
                     Try Notely for free
-                </Link>
+                </a>
             </footer>
         </div>
     );

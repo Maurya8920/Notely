@@ -7,6 +7,7 @@ const Unauthorized = () => {
                 {/* Signature element: a locked node, echoing your dashboard's graph/flow visuals */}
                 <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-full border border-border bg-muted">
                     <svg
+                        suppressHydrationWarning
                         className="h-6 w-6 text-muted-foreground"
                         fill="none"
                         viewBox="0 0 24 24"
