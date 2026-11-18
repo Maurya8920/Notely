@@ -6,6 +6,40 @@ Upload a document, ask questions about it, generate flashcards on demand, or jus
 
 ---
 
+## 🐳 Run with Docker
+
+The fastest way to run the full stack locally — no Python/Node setup required.
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running (WSL 2 backend on Windows)
+
+### Setup
+
+1. **Copy and fill in environment files:**
+   ```bash
+   cp .env.example .env.local   # Next.js — Auth0, MongoDB, Cloudinary, Redis keys
+   cp RAG/.env.example RAG/.env # FastAPI RAG — Gemini, Qdrant keys
+   ```
+
+2. **Build and start all services:**
+   ```bash
+   docker compose up --build
+   ```
+   > The first build downloads ~6 GB of ML dependencies (PyTorch, Docling). Subsequent starts use the cached image and are fast.
+
+3. **Open the app:** [http://localhost:3000](http://localhost:3000)
+
+   The RAG service is at [http://localhost:8000](http://localhost:8000) — wait for it to pass its healthcheck before uploading documents (usually ~30 s).
+
+### Stop
+
+```bash
+docker compose down
+```
+
+---
+
 ## ✨ Features
 
 - **Multi-format document ingestion** — PDF, PPTX, DOCX with text, table, and image OCR extraction
